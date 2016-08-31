@@ -199,7 +199,7 @@ describe('Server', function () {
   describe('GET /:resource?_sort=', function () {
     it('should respond with json and sort on a field', function (done) {
       request(server)
-        .get('/tags?_sort=+body')
+        .get('/tags?_sort=%2Bbody')
         .expect('Content-Type', /json/)
         .expect([db.tags[1], db.tags[0], db.tags[2]])
         .expect(200, done)
@@ -223,7 +223,7 @@ describe('Server', function () {
 
     it('should sort on nested field', function (done) {
       request(server)
-        .get('/nested?_sort=+resource.name')
+        .get('/nested?_sort=%2Bresource.name')
         .expect('Content-Type', /json/)
         .expect([db.nested[1], db.nested[0], db.nested[2]])
         .expect(200, done)
