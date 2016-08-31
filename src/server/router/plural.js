@@ -48,20 +48,18 @@ module.exports = function (db, name) {
 
     // Remove q, _start, _end, ... from req.query to avoid filtering using those
     // parameters
-    var q = req.query.q
-    var _start = req.query._start
+    var _q = req.query._q
+    var _offset = req.query._offset
     var _end = req.query._end
     var _page = req.query._page
     var _sort = req.query._sort
-    var _order = req.query._order
     var _limit = req.query._limit
     var _embed = req.query._embed
     var _expand = req.query._expand
-    delete req.query.q
-    delete req.query._start
+    delete req.query._q
+    delete req.query._offset
     delete req.query._end
     delete req.query._sort
-    delete req.query._order
     delete req.query._limit
     delete req.query._embed
     delete req.query._expand
@@ -84,14 +82,14 @@ module.exports = function (db, name) {
       delete req.query[query]
     })
 
-    if (q) {
+    if (_q) {
       // Full-text search
-      q = q.toLowerCase()
+      _q = _q.toLowerCase()
 
       chain = chain.filter(function (obj) {
         for (var key in obj) {
           var value = obj[key]
-          if (db._.deepQuery(value, q)) {
+          if (db._.deepQuery(value, _q)) {
             return true
           }
         }
@@ -139,15 +137,16 @@ module.exports = function (db, name) {
 
     // Sort
     if (_sort) {
-      _order = _order || 'ASC'
+      var sortsParams = _sort.split(",");
 
-      chain = chain.sortBy(function (element) {
-        return _.get(element, _sort)
-      })
+      var sortMapping = {};
+      sortsParams.forEach(function(sortParam) {
+        var order = sortParam[0] === "-" ? "DESC" : "ASC";
+        var sortField = sortParam.substring(1);
+        sortMapping[sortField] = order;
+      });
 
-      if (_order === 'DESC') {
-        chain = chain.reverse()
-      }
+      chain = chain.orderBy(_.keys(sortMapping), _.values(sortMapping));
     }
 
     // Slice result
@@ -183,13 +182,13 @@ module.exports = function (db, name) {
       res.links(links)
       chain = _.chain(page.items)
     } else if (_end) {
-      _start = parseInt(_start, 10) || 0
+      _offset = parseInt(_offset, 10) || 0
       _end = parseInt(_end, 10)
-      chain = chain.slice(_start, _end)
+      chain = chain.slice(_offset, _end)
     } else if (_limit) {
-      _start = parseInt(_start, 10) || 0
+      _offset = parseInt(_offset, 10) || 0
       _limit = parseInt(_limit, 10)
-      chain = chain.slice(_start, _start + _limit)
+      chain = chain.slice(_offset, _offset + _limit)
     }
 
     // embed and expand
