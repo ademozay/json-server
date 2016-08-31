@@ -150,10 +150,10 @@ describe('Server', function () {
     })
   })
 
-  describe('GET /:resource?q=', function () {
+  describe('GET /:resource?_q=', function () {
     it('should respond with json and make a full-text search', function (done) {
       request(server)
-        .get('/tags?q=pho')
+        .get('/tags?_q=pho')
         .expect('Content-Type', /json/)
         .expect([db.tags[1], db.tags[2]])
         .expect(200, done)
@@ -161,7 +161,7 @@ describe('Server', function () {
 
     it('should respond with json and make a deep full-text search', function (done) {
       request(server)
-        .get('/deep?q=1')
+        .get('/deep?_q=1')
         .expect('Content-Type', /json/)
         .expect(db.deep)
         .expect(200, done)
@@ -169,7 +169,7 @@ describe('Server', function () {
 
     it('should return an empty array when nothing is matched', function (done) {
       request(server)
-        .get('/tags?q=nope')
+        .get('/tags?_q=nope')
         .expect('Content-Type', /json/)
         .expect([])
         .expect(200, done)
@@ -177,7 +177,7 @@ describe('Server', function () {
 
     it('should support other query parameters', function (done) {
       request(server)
-        .get('/comments?q=qu&published=true')
+        .get('/comments?_q=qu&published=true')
         .expect('Content-Type', /json/)
         .expect([db.comments[3]])
         .expect(200, done)
@@ -199,7 +199,7 @@ describe('Server', function () {
   describe('GET /:resource?_sort=', function () {
     it('should respond with json and sort on a field', function (done) {
       request(server)
-        .get('/tags?_sort=body')
+        .get('/tags?_sort=+body')
         .expect('Content-Type', /json/)
         .expect([db.tags[1], db.tags[0], db.tags[2]])
         .expect(200, done)
@@ -207,7 +207,7 @@ describe('Server', function () {
 
     it('should reverse sorting with _order=DESC', function (done) {
       request(server)
-        .get('/tags?_sort=body&_order=DESC')
+        .get('/tags?_sort=-body')
         .expect('Content-Type', /json/)
         .expect([db.tags[2], db.tags[0], db.tags[1]])
         .expect(200, done)
@@ -215,7 +215,7 @@ describe('Server', function () {
 
     it('should sort on numerical field', function (done) {
       request(server)
-        .get('/posts?_sort=id&_order=DESC')
+        .get('/posts?_sort=-id')
         .expect('Content-Type', /json/)
         .expect(db.posts.reverse())
         .expect(200, done)
@@ -223,17 +223,17 @@ describe('Server', function () {
 
     it('should sort on nested field', function (done) {
       request(server)
-        .get('/nested?_sort=resource.name')
+        .get('/nested?_sort=+resource.name')
         .expect('Content-Type', /json/)
         .expect([db.nested[1], db.nested[0], db.nested[2]])
         .expect(200, done)
     })
   })
 
-  describe('GET /:resource?_start=&_end=', function () {
+  describe('GET /:resource?_offset=&_end=', function () {
     it('should respond with a sliced array', function (done) {
       request(server)
-        .get('/comments?_start=1&_end=2')
+        .get('/comments?_offset=1&_end=2')
         .expect('Content-Type', /json/)
         .expect('x-total-count', db.comments.length.toString())
         .expect('Access-Control-Expose-Headers', 'X-Total-Count')
@@ -242,10 +242,10 @@ describe('Server', function () {
     })
   })
 
-  describe('GET /:resource?_start=&_limit=', function () {
+  describe('GET /:resource?_offset=&_limit=', function () {
     it('should respond with a limited array', function (done) {
       request(server)
-        .get('/comments?_start=1&_limit=1')
+        .get('/comments?_offset=1&_limit=1')
         .expect('Content-Type', /json/)
         .expect('x-total-count', db.comments.length.toString())
         .expect('Access-Control-Expose-Headers', 'X-Total-Count')
