@@ -56,6 +56,7 @@ module.exports = function (db, name) {
     var _limit = req.query._limit
     var _embed = req.query._embed
     var _expand = req.query._expand
+    var _fields = req.query._fields
     delete req.query._q
     delete req.query._offset
     delete req.query._end
@@ -63,6 +64,7 @@ module.exports = function (db, name) {
     delete req.query._limit
     delete req.query._embed
     delete req.query._expand
+    delete req.query._fields
 
     // Automatically delete query parameters that can't be found
     // in the database
@@ -191,6 +193,11 @@ module.exports = function (db, name) {
       chain = chain.slice(_offset, _offset + _limit)
     }
 
+    if (_fields) {
+      chain = chain.map(function (element) {
+        return _.pick(element, _fields.split(','))
+      })
+    }
     // embed and expand
     chain = chain
       .cloneDeep()

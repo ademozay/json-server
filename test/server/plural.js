@@ -108,6 +108,16 @@ describe('Server', function () {
     })
   })
 
+  describe('GET /:resource?_fields=', function () {
+    it('should respond only specified fields', function (done) {
+      request(server)
+          .get('/posts?_fields=id')
+          .expect('Content-Type', /json/)
+          .expect([{id: db.posts[0].id}, {id: db.posts[1].id}])
+          .expect(200, done)
+    })
+  })
+
   describe('GET /:resource?attr=&attr=', function () {
     it('should respond with json and filter resources', function (done) {
       request(server)
