@@ -141,7 +141,7 @@ module.exports = function (db, name) {
 
       var sortMapping = {};
       sortsParams.forEach(function(sortParam) {
-        var order = sortParam[0] === "-" ? "DESC" : "ASC";
+        var order = sortParam[0] === "-" ? "desc" : "asc";
         var sortField = sortParam.substring(1);
         sortMapping[sortField] = order;
       });
