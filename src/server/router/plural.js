@@ -137,16 +137,16 @@ module.exports = function (db, name) {
 
     // Sort
     if (_sort) {
-      var sortsParams = _sort.split(",");
+      var sortsParams = _sort.split(',')
 
-      var sortMapping = {};
-      sortsParams.forEach(function(sortParam) {
-        var order = sortParam[0] === "-" ? "desc" : "asc";
-        var sortField = sortParam.substring(1);
-        sortMapping[sortField] = order;
-      });
+      var sortMapping = {}
+      sortsParams.forEach(function (sortParam) {
+        var order = sortParam[0] === '-' ? 'desc' : 'asc'
+        var sortField = sortParam.substring(1)
+        sortMapping[sortField] = order
+      })
 
-      chain = chain.orderBy(_.keys(sortMapping), _.values(sortMapping));
+      chain = chain.orderBy(_.keys(sortMapping), _.values(sortMapping))
     }
 
     // Slice result
