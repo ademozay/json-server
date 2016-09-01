@@ -3,6 +3,9 @@ var _ = require('lodash')
 var pluralize = require('pluralize')
 var utils = require('../utils')
 
+const operators = ['~=', '=~', '!=', '<=', '>=', '<', '>', '\\|=', '=', '~']
+const operatorsRegex = new RegExp('(' + operators.join('|') + ')')
+
 module.exports = function (db, name) {
   // Create router
   var router = express.Router()
@@ -57,6 +60,7 @@ module.exports = function (db, name) {
     var _embed = req.query._embed
     var _expand = req.query._expand
     var _fields = req.query._fields
+    var _filter = req.query._filter
     delete req.query._q
     delete req.query._offset
     delete req.query._end
@@ -98,43 +102,77 @@ module.exports = function (db, name) {
       })
     }
 
-    Object.keys(req.query).forEach(function (key) {
-      // Don't take into account JSONP query parameters
-      // jQuery adds a '_' query parameter too
-      if (key !== 'callback' && key !== '_') {
-        // Always use an array, in case req.query is an array
-        var arr = [].concat(req.query[key])
+    var filterMapping = {}
 
-        chain = chain.filter(function (element) {
-          return arr
+    if (_filter) {
+      var filters = _filter.split(',')
+      filters.forEach(function (filter) {
+        var filterParts = filter.split(operatorsRegex)
+        if (filterParts.length !== 3) {
+          return
+        }
+        var key = filterParts[0]
+        var op = filterParts[1]
+        var value = filterParts[2]
+
+        if (!filterMapping[key + op]) {
+          filterMapping[key + op] = {value: []}
+        }
+
+        filterMapping[key + op].value.push(value)
+        filterMapping[key + op].op = op
+      })
+    }
+
+    Object.keys(filterMapping).forEach(function (key) {
+      var values = filterMapping[key].value
+
+      chain = chain.filter(function (element) {
+        return values
             .map(utils.toNative)
             .map(function (value) {
-              var isDifferent = key.indexOf('_ne') !== -1
-              var isRange = key.indexOf('_lte') !== -1 || key.indexOf('_gte') !== -1
-              var isLike = key.indexOf('_like') !== -1
-              var path = key.replace(/(_lte|_gte|_ne|_like)$/, '')
+              var op = filterMapping[key].op
+              var isDifferent = key.indexOf('!=') !== -1 // op === '!='
+              var isRange = key.indexOf('<') !== -1 || key.indexOf('>') !== -1 || key.indexOf('<=') !== -1 || key.indexOf('>=') !== -1 //     op === '<' || op === '>' || op === '<=' || op === '>='
+              var isLike = key.indexOf('~') !== -1 || key.indexOf('~=') !== -1 || key.indexOf('=~') !== -1  // op === '~' || op === "~=" || op === '=~'
+              var isIn = key.indexOf('|=') !== -1
+              var path = key.replace(operatorsRegex, '')
               var elementValue = _.get(element, path)
 
               if (isRange) {
-                var isLowerThan = key.indexOf('_gte') !== -1
-
-                if (isLowerThan) {
-                  return value <= elementValue
-                } else {
-                  return value >= elementValue
+                switch (op) {
+                  case '<':
+                    return elementValue < value
+                  case '>':
+                    return elementValue > value
+                  case '<=':
+                    return elementValue <= value
+                  case '>=':
+                    return elementValue >= value
+                  default:
+                    return false
                 }
               } else if (isDifferent) {
                 return value !== elementValue
               } else if (isLike) {
                 return new RegExp(value, 'i').test(elementValue)
+              } else if (isIn) {
+                var inValues = value.toString().split('|')
+                inValues = _.map(inValues, function (val) {
+                  return utils.toNative(val)
+                })
+                if (Array.isArray(elementValue)) {
+                  return _.intersection(elementValue, inValues).length > 0
+                } else {
+                  return _.includes(inValues, elementValue)
+                }
               } else {
-                return _.matchesProperty(key, value)(element)
+                return _.matchesProperty(path, value)(element)
               }
             }).reduce(function (a, b) {
               return a || b
             })
-        })
-      }
+      })
     })
 
     // Sort
@@ -148,7 +186,7 @@ module.exports = function (db, name) {
         sortMapping[sortField] = order
       })
 
-      chain = chain.orderBy(_.keys(sortMapping), _.values(sortMapping))
+      chain = chain.orderBy(_.keys(sortMapping), _.values(sortMapping)) // TODO iteration order is not guaranteed
     }
 
     // Slice result

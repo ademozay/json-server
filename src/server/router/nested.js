@@ -9,6 +9,11 @@ module.exports = function () {
   function get (req, res, next) {
     var prop = pluralize.singular(req.params.resource)
     req.query[prop + 'Id'] = utils.toNative(req.params.id)
+    if (!req.query._filter) {
+      req.query._filter = prop + 'Id=' + req.params.id
+    } else {
+      req.query._filter += ',' + prop + 'Id=' + req.params.id
+    }
     req.url = '/' + req.params.nested
     next()
   }

@@ -121,7 +121,7 @@ describe('Server', function () {
   describe('GET /:resource?attr=&attr=', function () {
     it('should respond with json and filter resources', function (done) {
       request(server)
-        .get('/comments?postId=1&published=true')
+        .get('/comments?_filter=postId=1,published=true')
         .expect('Content-Type', /json/)
         .expect([db.comments[0]])
         .expect(200, done)
@@ -129,7 +129,7 @@ describe('Server', function () {
 
     it('should support multiple filters', function (done) {
       request(server)
-        .get('/comments?id=1&id=2')
+        .get('/comments?_filter=id=1,id=2')
         .expect('Content-Type', /json/)
         .expect([db.comments[0], db.comments[1]])
         .expect(200, done)
@@ -137,7 +137,7 @@ describe('Server', function () {
 
     it('should support deep filter', function (done) {
       request(server)
-        .get('/deep?a.b=1')
+        .get('/deep?_filter=a.b=1')
         .expect('Content-Type', /json/)
         .expect([db.deep[0]])
         .expect(200, done)
@@ -187,7 +187,7 @@ describe('Server', function () {
 
     it('should support other query parameters', function (done) {
       request(server)
-        .get('/comments?_q=qu&published=true')
+        .get('/comments?_q=qu&_filter=published=true')
         .expect('Content-Type', /json/)
         .expect([db.comments[3]])
         .expect(200, done)
@@ -299,7 +299,7 @@ describe('Server', function () {
   describe('GET /:resource?attr_gte=&attr_lte=', function () {
     it('should respond with a limited array', function (done) {
       request(server)
-        .get('/comments?id_gte=2&id_lte=3')
+        .get('/comments?_filter=id>=2,id<=3')
         .expect('Content-Type', /json/)
         .expect(db.comments.slice(1, 3))
         .expect(200, done)
@@ -309,7 +309,7 @@ describe('Server', function () {
   describe('GET /:resource?attr_ne=', function () {
     it('should respond with a limited array', function (done) {
       request(server)
-        .get('/comments?id_ne=1')
+        .get('/comments?_filter=id!=1')
         .expect('Content-Type', /json/)
         .expect(db.comments.slice(1))
         .expect(200, done)
@@ -319,7 +319,7 @@ describe('Server', function () {
   describe('GET /:resource?attr_like=', function () {
     it('should respond with an array that matches the like operator (case insensitive)', function (done) {
       request(server)
-        .get('/tags?body_like=photo')
+        .get('/tags?_filter=body~photo')
         .expect('Content-Type', /json/)
         .expect([
           db.tags[1],
